@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, abort, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-
+import os
+import re
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI']="sqlite:////todo.db"
@@ -9,6 +10,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
+app.config['SECRET_KEY'] = 'hggj@#$hkh'
 
 class Todo(db.Model):
     sno = db.Column(db.Integer, primary_key=True)
@@ -31,22 +33,43 @@ def hello_world():
 
     allTodo = Todo.query.all()
     return render_template('index.html', allTodo = allTodo )
+ 
+@app.route('/login', methods = ['GET','POST'])
+def login():
+    email=request.format('email')
+    password= request.form.get('password')
+    user_data= Todo.query.filter_by(email=email).first()
+    if not user_data:
+        return {"message": "Account not found, please signup"}
+    if not user_data['password'] ==  password:
+        return {"message": "passwrd is not correct, please provide valid password!"}
+    return render_template(base.html)
+    return "The email is {} and the password is {}.format(email,password)"
     
 
 
-@app.route('/login')
-def login():
-    return 'Hello, this login page'
+# @app.route('/logout')
+# def logout():
+#     session.pop('loggedin', None)
+#     session.pop('id', None)
+#     session.pop('username', None)
+#     return redirect(url_for('login'))
+
+# @app.route('/signup', method)
+# def Signup():
+#     if request.method == 'POST':
+
+#     return render_template('signup.html')
 
 @app.route('/about')
 def About():
-    return 'Hello, this about us page'
+    return render_template('about.html')
 
 @app.route('/show')
 def product():
     
     print(allTodo)
-    return 'Hello, this for query '
+    return 'Hello, this for query'
 
 @app.route('/update/<int:sno>', methods=['GET','POST'])
 def update(sno):
@@ -70,4 +93,6 @@ def delete(sno):
     return redirect ('/')
 
 if __name__=='__main__':
+    app.secret_key= os.urandom(12)
     app.run(debug=True) 
+
