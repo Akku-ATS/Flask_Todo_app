@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 import re
 
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI']="sqlite:////todo.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -13,6 +14,7 @@ db = SQLAlchemy(app)
 app.config['SECRET_KEY'] = 'hggj@#$hkh'
 
 class Todo(db.Model):
+    __tablename__ = 'todo'
     sno = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable= False)
     desc =db.Column(db.String(500), nullable= False)
@@ -20,6 +22,21 @@ class Todo(db.Model):
 
     def __repr__(self) ->str:
         return f"{self.sno} {self.title}"
+
+
+class User(db.Model):
+    __tablename__ = 'user'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(200), nullable = False)
+    email = db.Column(db.String(200))
+    password = db.Column(db.String(100), nullable = False)
+    date_created = db.Column (db.DateTime, default=datetime.utcnow)
+
+
+    def __repr__(self) ->str:
+        return f"{self.id} {self.email}"
+
+
 
 
 @app.route('/', methods=['GET','POST'])
@@ -32,20 +49,27 @@ def hello_world():
         db.session.commit()
 
     allTodo = Todo.query.all()
-    return render_template('index.html', allTodo = allTodo )
+    return render_template('index.html', allTodo = allTodo)
  
-@app.route('/login', methods = ['GET','POST'])
+@app.route('/logindata', methods = ['GET','POST'])
 def login():
-    email=request.format('email')
-    password= request.form.get('password')
-    user_data= Todo.query.filter_by(email=email).first()
-    if not user_data:
-        return {"message": "Account not found, please signup"}
-    if not user_data['password'] ==  password:
-        return {"message": "passwrd is not correct, please provide valid password!"}
-    return render_template(base.html)
-    return "The email is {} and the password is {}.format(email,password)"
+    if request.method =='GET':
+        print("Button Clicked......")
+        return render_template('/login.html')
+    if request.method == 'POST':
+        email=request.form.get('email')
+        password= request.form.get('password')
+        username= request.form.get('username')
+        user = User(username=username , email=email,password = password)
+        user_data= User.query.filter_by(email=email).first()
+        if not user_data:
+            return {"message": "Account not found, please signup"}
+        if not user_data['password'] ==  password:
+            return {"message": "passwrd is not correct, please provide valid password!"}
     
+        return "The email is {} and the password is {}.format(email,password)"
+
+
 
 
 # @app.route('/logout')
@@ -79,7 +103,9 @@ def update(sno):
         todo = Todo.query.filter_by(sno=sno).first()
         todo.title = title
         todo.desc = desc
+        # add for insert query ---title and desc ko todo me add kar rahe h 
         db.session.add(todo)
+        # commit means save it
         db.session.commit()
         return redirect("/")
 
@@ -93,6 +119,9 @@ def delete(sno):
     return redirect ('/')
 
 if __name__=='__main__':
+    #db.create_all function is used to create all table in database which is not already present but defined in alchemy
+    db.create_all()
+
     app.secret_key= os.urandom(12)
     app.run(debug=True) 
 
